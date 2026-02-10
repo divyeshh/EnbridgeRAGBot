@@ -13,7 +13,9 @@ env/
 # Databases & Large Data
 chroma_db/
 backend/chroma_db/
-backend/uploaded_documents/*
+# We allow sample documents for the cloud demo
+# backend/uploaded_documents/*  <-- Commented out
+!backend/uploaded_documents/*.pdf
 !backend/uploaded_documents/.gitkeep
 
 # IDEs
