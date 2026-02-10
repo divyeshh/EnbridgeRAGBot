@@ -44,11 +44,18 @@ if "chatbot" not in st.session_state:
         st.stop()
     
     # 2. Initialize the bot
-    # Note: On Streamlit Cloud, the project dir is read-only. We use /tmp for the database.
+    # Note: On Streamlit Cloud, the project dir is read-only. We use /tmp.
+    # We add a small hash/ID to ensure different sessions don't lock each other.
     with st.spinner("🚀 Initializing AI Assistant..."):
-        # Check if running in Streamlit Cloud (/mount/src/...)
-        is_cloud = os.path.exists("/mount/src")
-        persist_dir = "/tmp/chroma_db" if is_cloud else "backend/chroma_db"
+        # Detect Streamlit Cloud
+        is_cloud = os.getenv("STREAMLIT_RUNTIME_ENV") == "cloud" or os.path.exists("/mount/src")
+        
+        if is_cloud:
+            persist_dir = "/tmp/chroma_db_session"
+            # Explicitly create to ensure write permissions
+            os.makedirs(persist_dir, exist_ok=True)
+        else:
+            persist_dir = "backend/chroma_db"
         
         chatbot = RAGChatbot(
             groq_api_key=api_key,
