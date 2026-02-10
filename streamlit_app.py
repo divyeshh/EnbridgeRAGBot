@@ -44,11 +44,15 @@ if "chatbot" not in st.session_state:
         st.stop()
     
     # 2. Initialize the bot
-    # Note: We point to 'backend/chroma_db' relative to project root
+    # Note: On Streamlit Cloud, the project dir is read-only. We use /tmp for the database.
     with st.spinner("🚀 Initializing AI Assistant..."):
+        # Check if running in Streamlit Cloud (/mount/src/...)
+        is_cloud = os.path.exists("/mount/src")
+        persist_dir = "/tmp/chroma_db" if is_cloud else "backend/chroma_db"
+        
         chatbot = RAGChatbot(
             groq_api_key=api_key,
-            chroma_persist_dir="backend/chroma_db"
+            chroma_persist_dir=persist_dir
         )
         
         # 3. Auto-sync documents on first run
