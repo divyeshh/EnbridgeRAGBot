@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Secrets
+.env
+
+# Databases & Large Data
+chroma_db/
+backend/chroma_db/
+backend/uploaded_documents/*
+!backend/uploaded_documents/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
