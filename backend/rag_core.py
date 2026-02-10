@@ -28,10 +28,13 @@ class RAGChatbot:
         # Standardize all paths to be inside the backend folder for consistency
         self.backend_dir = os.path.dirname(os.path.abspath(__file__))
         
-        # Absolute path to chroma_db (resolved relative to execution context)
-        self.chroma_persist_dir = os.path.abspath(chroma_persist_dir)
+        # Persistence directory (None for in-memory mode)
+        if chroma_persist_dir:
+            self.chroma_persist_dir = os.path.abspath(chroma_persist_dir)
+        else:
+            self.chroma_persist_dir = None
             
-        print(f"📂 RAG Core initialized. Persistence directory: {self.chroma_persist_dir}")
+        print(f"📂 RAG Core initialized. Mode: {'Persistent' if self.chroma_persist_dir else 'In-Memory'}")
         
         # Set API key
         os.environ["GROQ_API_KEY"] = groq_api_key
@@ -155,14 +158,18 @@ class RAGChatbot:
             return 0
         
         # Create or update vector store
-        print(f"📦 Indexing {len(all_splits)} total chunks into ChromaDB at {self.chroma_persist_dir}...")
+        print(f"📦 Indexing {len(all_splits)} total chunks into ChromaDB...")
         if self.vectorstore is None:
-            self.vectorstore = Chroma.from_documents(
-                collection_name=self.collection_name,
-                documents=all_splits,
-                embedding=self.embeddings,
-                persist_directory=self.chroma_persist_dir
-            )
+            kwargs = {
+                "collection_name": self.collection_name,
+                "documents": all_splits,
+                "embedding": self.embeddings
+            }
+            # Only add persist_directory if we have a path
+            if self.chroma_persist_dir:
+                kwargs["persist_directory"] = self.chroma_persist_dir
+                
+            self.vectorstore = Chroma.from_documents(**kwargs)
         else:
             self.vectorstore.add_documents(all_splits)
         
@@ -236,10 +243,12 @@ class RAGChatbot:
             return 0
     
     def clear_vectorstore(self):
-        """Clear all documents from vector store and delete files"""
+        """Clear all documents from vector store"""
         if self.vectorstore is not None:
             try:
-                self.vectorstore.delete_collection()
+                # Soft reset the vectorstore if possible
+                if hasattr(self.vectorstore, 'delete_collection'):
+                    self.vectorstore.delete_collection()
             except:
                 pass
             self.vectorstore = None
@@ -250,20 +259,12 @@ class RAGChatbot:
         import gc
         gc.collect()
         
-        # Physically delete any and all chroma_db folders found to be absolutely sure
-        root_dir = os.path.dirname(self.backend_dir)
-        possible_dirs = [
-            self.chroma_persist_dir,                              # Current official path
-            os.path.join(self.backend_dir, "chroma_db"),         # Path inside backend
-            os.path.join(root_dir, "chroma_db")                  # Path in root
-        ]
+        # Physically delete the directory ONLY if we are in persistence mode
+        if self.chroma_persist_dir and os.path.exists(self.chroma_persist_dir):
+            try:
+                shutil.rmtree(self.chroma_persist_dir, ignore_errors=True)
+                print(f"🗑️ Deleted directory: {self.chroma_persist_dir}")
+            except Exception as e:
+                print(f"⚠️ Could not delete directory {self.chroma_persist_dir}: {e}")
         
-        for d in set(possible_dirs):
-            if os.path.exists(d):
-                try:
-                    shutil.rmtree(d, ignore_errors=True)
-                    print(f"🗑️ Deleted directory: {d}")
-                except Exception as e:
-                    print(f"⚠️ Could not delete directory {d}: {e}")
-        
-        print("✅ Vector store and ghost directories cleared")
+        print(f"✅ Vector store cleared (Mode: {'Persistent' if self.chroma_persist_dir else 'In-Memory'})")
