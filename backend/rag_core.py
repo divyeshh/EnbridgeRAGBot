@@ -28,8 +28,8 @@ class RAGChatbot:
         # Standardize all paths to be inside the backend folder for consistency
         self.backend_dir = os.path.dirname(os.path.abspath(__file__))
         
-        # Absolute path to chroma_db (always inside backend/)
-        self.chroma_persist_dir = os.path.abspath(os.path.join(self.backend_dir, "chroma_db"))
+        # Absolute path to chroma_db (resolved relative to execution context)
+        self.chroma_persist_dir = os.path.abspath(chroma_persist_dir)
             
         print(f"📂 RAG Core initialized. Persistence directory: {self.chroma_persist_dir}")
         
