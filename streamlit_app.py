@@ -30,6 +30,38 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- Custom CSS for Accessibility (Large Fonts & High Contrast) ---
+st.markdown("""
+<style>
+    /* Global Font Size Increase */
+    html, body, [class*="st-"] {
+        font-size: 1.2rem !important;
+    }
+    
+    /* Chat Message Font Sizes */
+    .stChatMessage p {
+        font-size: 1.3rem !important;
+        line-height: 1.6 !important;
+    }
+    
+    /* Header Font Sizes */
+    h1 { font-size: 2.5rem !important; }
+    h2 { font-size: 2rem !important; }
+    h3 { font-size: 1.6rem !important; }
+    
+    /* Sidebar Accessibility */
+    .stSidebar [data-testid="stSidebarNav"] {
+        font-size: 1.1rem !important;
+    }
+    
+    /* Make buttons bigger and easier to click */
+    .stButton button {
+        height: 3em !important;
+        font-size: 1.1rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize Session State
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -82,6 +114,17 @@ with st.sidebar:
 
 # Main chat interface
 st.title("🤖 Enbridge Assistant")
+
+# --- Simple How-to Guide for Employees ---
+with st.expander("👋 New here? Click for a simple guide", expanded=True):
+    st.markdown("""
+    **I am here to help you with your tech questions!**
+    - ✏️ **Just type** your question in the box at the bottom (for example: *How do I set up my phone?*)
+    - ⌨️ **Press Enter** on your keyboard to send it.
+    - 👨‍💻 **I will give you a simple answer** using our company's latest notes.
+    - 🗑️ **Want to start over?** Click the "Reset Chat" button on the left.
+    """)
+
 st.caption("How can I help you today?")
 
 # Display chat messages
