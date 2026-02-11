@@ -98,7 +98,7 @@ if "chatbot" not in st.session_state:
 
 # Sidebar
 with st.sidebar:
-    st.title("🤖 Assistant Settings")
+    st.title("🤖 Enbridge Bot")
     
     # System status
     count = st.session_state.chatbot.get_document_count()
