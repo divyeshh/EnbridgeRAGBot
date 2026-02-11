@@ -30,34 +30,34 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Custom CSS for Accessibility (Large Fonts & High Contrast) ---
+# --- Custom CSS for Accessibility (Optimized Fonts & High Contrast) ---
 st.markdown("""
 <style>
-    /* Global Font Size Increase */
+    /* Global Font Size (Slightly reduced from 1.2rem) */
     html, body, [class*="st-"] {
-        font-size: 1.2rem !important;
+        font-size: 1.1rem !important;
     }
     
-    /* Chat Message Font Sizes */
+    /* Chat Message Font Sizes (Better balance) */
     .stChatMessage p {
-        font-size: 1.3rem !important;
-        line-height: 1.6 !important;
+        font-size: 1.15rem !important;
+        line-height: 1.5 !important;
     }
     
     /* Header Font Sizes */
-    h1 { font-size: 2.5rem !important; }
-    h2 { font-size: 2rem !important; }
-    h3 { font-size: 1.6rem !important; }
+    h1 { font-size: 2.2rem !important; }
+    h2 { font-size: 1.8rem !important; }
+    h3 { font-size: 1.4rem !important; }
     
     /* Sidebar Accessibility */
     .stSidebar [data-testid="stSidebarNav"] {
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
     }
     
-    /* Make buttons bigger and easier to click */
+    /* Make buttons distinct but not oversized */
     .stButton button {
-        height: 3em !important;
-        font-size: 1.1rem !important;
+        height: 2.8em !important;
+        font-size: 1.05rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -121,7 +121,7 @@ with st.expander("👋 New here? Click for a simple guide", expanded=True):
     **I am here to help you with your tech questions!**
     - ✏️ **Just type** your question in the box at the bottom (for example: *How do I set up my phone?*)
     - ⌨️ **Press Enter** on your keyboard to send it.
-    - 👨‍💻 **I will give you a simple answer** using our company's latest notes.
+    - 👨‍💻 **I will give you a simple answer** to help you get started.
     - 🗑️ **Want to start over?** Click the "Reset Chat" button on the left.
     """)
 
