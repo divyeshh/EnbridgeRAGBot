@@ -82,9 +82,11 @@ if "chatbot" not in st.session_state:
         
         # Use None for chroma_persist_dir to trigger In-Memory mode in the cloud
         persist_dir = None if is_cloud else "backend/chroma_db"
+        model_name = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
         
         chatbot = RAGChatbot(
             groq_api_key=api_key,
+            model_name=model_name,
             chroma_persist_dir=persist_dir
         )
         
@@ -161,4 +163,4 @@ if prompt := st.chat_input("Ask me anything about Enbridge or tech support..."):
 
 # Footer
 st.divider()
-st.caption("Powered by Llama 3.1 & Enbridge Technical Data")
+st.caption("Powered by Llama 3.3 & Enbridge Technical Data")
