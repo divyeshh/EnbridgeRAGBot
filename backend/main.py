@@ -8,7 +8,12 @@ from typing import List, Optional
 import os
 import shutil
 from pathlib import Path
+from dotenv import load_dotenv
 from rag_core import RAGChatbot
+
+# Load environment variables from parent directory (.env is in root)
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -27,13 +32,22 @@ app.add_middleware(
 )
 
 # Configuration
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "your_groq_api_key_here")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL_NAME = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "rag_documents")
+CHROMA_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploaded_documents"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Initialize RAG chatbot
-rag_chatbot = RAGChatbot(groq_api_key=GROQ_API_KEY)
+rag_chatbot = RAGChatbot(
+    groq_api_key=GROQ_API_KEY,
+    model_name=MODEL_NAME,
+    collection_name=COLLECTION_NAME,
+    chroma_persist_dir=CHROMA_DIR
+)
 
 # Initial sync on startup
 print("🚀 Performing initial document sync...")

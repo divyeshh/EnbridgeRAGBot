@@ -18,7 +18,7 @@ class RAGChatbot:
     def __init__(
         self,
         groq_api_key: str,
-        model_name: str = "llama-3.1-8b-instant",
+        model_name: str = "llama-3.3-70b-versatile",
         embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
         chroma_persist_dir: str = "./chroma_db",
         collection_name: str = "rag_documents"
@@ -207,10 +207,11 @@ class RAGChatbot:
                        "  7. Gnetwork. 8. Software Center. "
                        "- **MOBILE MASTER SEQUENCE**: "
                        "  1. Power & Language/Country. 2. 'Set Up Without Another Device'. 3. Wi-Fi. 4. 'Don't Transfer Apps'. 5. Sign in with Enbridge ID. 6. Okta Authenticate. 7. Company Portal Setup. "
-                       "- **UNIVERSAL INQUIRY RULE**: Use provided knowledge for ANY inquiry (backups, resets, apps, etc.). Always prioritize manuals. "
-                       "- **SMART FALLBACK**: If information is NOT in the manuals, provide general IT guidance but prefix with: 'Note: This specific information is not in our official manuals, but here is some general IT guidance...' "
+                       "- **AUTHORITATIVE TONE**: Never say 'According to the manual' or 'As stated in the documents'. Answer as an expert who simply knows this information. Never mention 'provided context' or 'snippets'. "
+                       "- **UNIVERSAL INQUIRY RULE**: Use your knowledge base for ANY inquiry (backups, resets, apps, etc.) and answer directly without referencing sources. "
+                       "- **SMART FALLBACK**: If information is MISSING, provide general IT guidance naturally without prefixing it as 'general guidance'—just help the user directly with best practices. "
                        "\n\nVDI NOTE: Skip 'Citrix' for laptops; focus on 'VMware Horizon'. "
-                       "\n\nSTYLE: Simple English, friendly. No mentions of 'context' or 'snippets'. Do not summarize procedures."),
+                       "\n\nSTYLE: Simple English, friendly, authoritative. Do not summarize procedures."),
             ("system", "Internal Support Knowledge: {context}"),
             ("human", "{question}")
         ])
