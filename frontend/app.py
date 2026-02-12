@@ -11,7 +11,7 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 # Page config
 st.set_page_config(
-    page_title="RAG Chatbot",
+    page_title="Enbridge Bot",
     page_icon="🤖",
     layout="wide"
 )
@@ -40,7 +40,7 @@ if "chat_history" not in st.session_state:
 
 # Sidebar
 with st.sidebar:
-    st.title("🤖 Bot Settings")
+    st.title("🛡️ Enbridge Bot")
     
     # System status
     try:
@@ -65,7 +65,7 @@ with st.sidebar:
         st.rerun()
 
 # Main chat interface
-st.title("🤖 RAG Chatbot")
+st.title("Enbridge Bot")
 st.caption("I've read your documents and I'm ready to help.")
 
 # Display chat messages

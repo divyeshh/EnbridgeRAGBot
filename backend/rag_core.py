@@ -34,7 +34,7 @@ class RAGChatbot:
         else:
             self.chroma_persist_dir = None
             
-        print(f"📂 RAG Core initialized. Mode: {'Persistent' if self.chroma_persist_dir else 'In-Memory'}")
+        print(f"RAG Core initialized. Mode: {'Persistent' if self.chroma_persist_dir else 'In-Memory'}")
         
         # Set API key
         os.environ["GROQ_API_KEY"] = groq_api_key
@@ -52,7 +52,7 @@ class RAGChatbot:
             model_name=embedding_model
         )
         
-        # Initialize text splitter (Increased for better continuity)
+        # Initialize text splitter (Title-aware chunks)
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=2000,
             chunk_overlap=400,
@@ -82,7 +82,7 @@ class RAGChatbot:
                     search_kwargs={"k": 5}
                 )
                 self._setup_rag_chain()
-                print(f"✅ Loaded existing vector store from {self.chroma_persist_dir}")
+                print(f"Loaded existing vector store from {self.chroma_persist_dir}")
         except Exception as e:
             print(f"⚠️  Could not load existing vector store: {e}")
     
@@ -103,11 +103,11 @@ class RAGChatbot:
         if not os.path.isabs(folder_path):
             folder_path = os.path.abspath(folder_path)
             
-        print(f"🚀 Syncing folder: {folder_path}")
+        print(f"Syncing folder: {folder_path}")
         
         if not os.path.exists(folder_path):
             os.makedirs(folder_path, exist_ok=True)
-            print(f"📁 Created folder: {folder_path}")
+            print(f"Created folder: {folder_path}")
             return 0
         
         # Get all PDF and DOCX files recursively
@@ -117,7 +117,7 @@ class RAGChatbot:
                 if file.endswith('.pdf') or file.endswith('.docx'):
                     full_path = os.path.join(root, file)
                     file_paths.append(full_path)
-                    print(f"🔍 Found document: {full_path}")
+                    print(f"Found document: {full_path}")
         
         if not file_paths:
             print(f"⚠️  No documents found in {folder_path}")
@@ -138,7 +138,7 @@ class RAGChatbot:
         # Load and split each document separately for better tracking
         for file_path in file_paths:
             try:
-                print(f"📖 Loading: {os.path.basename(file_path)}")
+                print(f"Loading: {os.path.basename(file_path)}")
                 docs = self.load_documents(file_path)
                 if not docs:
                     print(f"⚠️  File {os.path.basename(file_path)} returned no content.")
@@ -146,7 +146,13 @@ class RAGChatbot:
                 
                 # Split this file's documents
                 file_splits = self.text_splitter.split_documents(docs)
-                print(f"✅ Created {len(file_splits)} chunks from {os.path.basename(file_path)}")
+                
+                # Prepend Title to every chunk for better retrieval hits
+                doc_title = os.path.basename(file_path).replace(".pdf", "").replace("Job Aid_", "")
+                for split in file_splits:
+                    split.page_content = f"[Manual: {doc_title}] Page {split.metadata.get('page', '?')}\n{split.page_content}"
+                
+                print(f"Created {len(file_splits)} title-aware chunks from {os.path.basename(file_path)}")
                 all_splits.extend(file_splits)
                 total_chunks += len(file_splits)
                 
@@ -158,7 +164,7 @@ class RAGChatbot:
             return 0
         
         # Create or update vector store
-        print(f"📦 Indexing {len(all_splits)} total chunks into ChromaDB...")
+        print(f"Indexing {len(all_splits)} total chunks into ChromaDB...")
         if self.vectorstore is None:
             kwargs = {
                 "collection_name": self.collection_name,
@@ -173,49 +179,38 @@ class RAGChatbot:
         else:
             self.vectorstore.add_documents(all_splits)
         
-        # Setup retriever and RAG chain (Deep retrieval for accuracy)
+        # Setup retriever and RAG chain (High-depth for reranking)
         self.retriever = self.vectorstore.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 15}
+            search_kwargs={"k": 40}
         )
         self._setup_rag_chain()
         
-        print(f"✅ Vector store updated and ready with {len(all_splits)} chunks")
+        print(f"Vector store updated and ready with {len(all_splits)} chunks")
         return len(all_splits)
     
     def _setup_rag_chain(self):
         """Setup a simple RAG chain"""
         self.qa_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a warm, patient, and friendly internal IT support assistant for company employees. "
-                       "\n\nYour job is to act as a direct messenger for the official internal support knowledge. "
-                       "\n\nCRITICAL GROUNDING RULE (ABSOLUTE): "
-                       "- If a procedure (like setup, login, or update) exists in the knowledge, YOU MUST PROVIDE THE FULL STEPS. "
-                       "- Never summarize so much that you skip steps. If there are 10 steps, give all 10 steps. "
-                       "- Do NOT guess or use internet knowledge if the knowledge contains an answer. "
-                       "- Do NOT invent system names or options. "
-                       "\n\nNO MANUAL REFERENCES RULE: "
-                       "- NEVER tell users to 'refer to the manual', 'see the document', 'watch a video', or 'check the job aid'. "
-                       "- YOUR job is to read those for them and explain the steps directly. "
-                       "\n\nCLARIFICATION RULE: "
-                       "- If the user specifies a device (e.g., 'Laptop' or 'Phone'), jump straight to the matching steps in the knowledge. "
-                       "- Only ask a follow-up question if the request is truly ambiguous (e.g., just 'I need help'). "
-                       "\n\nIF OFFICIAL INFORMATION EXISTS: "
-                       "- Provide the complete, detailed process. "
-                       "- Use very simple English for non-technical users. "
-                       "- Format clearly: Step 1, Step 2, etc. "
-                       "\n\nIF OFFICIAL INFORMATION DOES NOT EXIST: "
-                       "- Say: 'I’m not seeing official instructions for that yet, but here’s a simple guide based on what I know.' "
-                       "- Then provide helpful general guidance. "
-                       "\n\nSTYLE RULES: "
-                       "- Use Grade 6 English (Simple and clear). "
-                       "- Assume the user is older and not technical. "
-                       "- Keep sentences short. "
-                       "- Be extremely friendly. "
-                       "- Do NOT mention 'context', 'snippets', 'files', or 'sources'. "
-                       "\n\nGOAL: "
-                       "Ensure the employee completes the task without needing to contact a human or raise a ticket. "
-                       "Only suggest a ticket if official steps fail or backend IT help is required. "
-                       "If needed, say: 'If this does not work, I can help you raise a quick support ticket.'"),
+            ("system", "You are a warm internal IT support assistant. "
+                       "\n\nAMBIGUITY RULE: "
+                       "- If query is 'setup device' without 'Laptop' or 'Mobile', ask: 'Are you setting up your Enbridge Laptop or your Mobile device?' "
+                       "\n\nGROUNDING & 'HYPER-DETAIL' RULES: "
+                       "- **NEVER SUMMARIZE**: You must reproduce the steps EXACTLY. If the manual has i, ii, iii or a, b, c, you MUST include every one of them in a nested list. "
+                       "- **LAPTOP MASTER SEQUENCE**: "
+                       "  1. Power & Connect (Plug in, login). "
+                       "  2. VPN (Global Protect & Secure Connect). "
+                       "  3. Pinning Apps (Outlook/OneDrive/Teams). "
+                       "  4. **Rule Import (Page 6/7)**: Include ALL sub-steps (Navigate to ELink, Download rule file, Right-click Inbox -> New Folder 'Inbox External', Manage Rules -> Options -> Import). Then include **Step 5: Verify Folder** (Choose 'Inbox' then 'Inbox External', click OK) and **Step 6: Finalize Rule** (Select 'Apply' then 'OK'). "
+                       "  5. DE VDI/VDI (VMware Horizon). "
+                       "  6. Printer (Windows+R, \\\\enbpazcwldd001). "
+                       "  7. Gnetwork. 8. Software Center. "
+                       "- **MOBILE MASTER SEQUENCE**: "
+                       "  1. Power & Language/Country. 2. 'Set Up Without Another Device'. 3. Wi-Fi. 4. 'Don't Transfer Apps'. 5. Sign in with Enbridge ID. 6. Okta Authenticate. 7. Company Portal Setup. "
+                       "- **UNIVERSAL INQUIRY RULE**: Use provided knowledge for ANY inquiry (backups, resets, apps, etc.). Always prioritize manuals. "
+                       "- **SMART FALLBACK**: If information is NOT in the manuals, provide general IT guidance but prefix with: 'Note: This specific information is not in our official manuals, but here is some general IT guidance...' "
+                       "\n\nVDI NOTE: Skip 'Citrix' for laptops; focus on 'VMware Horizon'. "
+                       "\n\nSTYLE: Simple English, friendly. No mentions of 'context' or 'snippets'. Do not summarize procedures."),
             ("system", "Internal Support Knowledge: {context}"),
             ("human", "{question}")
         ])
@@ -229,12 +224,65 @@ class RAGChatbot:
             raise ValueError("No documents loaded. Please upload documents first.")
         
         # Get relevant documents
-        print(f"🔍 Searching for: {question}")
-        docs = self.retriever.invoke(question)
-        print(f"🎯 Found {len(docs)} relevant snippets from {len(set(doc.metadata.get('source','') for doc in docs))} different files")
+        print(f"Searching for: {question}")
+        raw_docs = self.retriever.invoke(question)
+        
+        # DEEP RERANKING: Boost by filename OR sequence (Page 0/1)
+        q_lower = question.lower()
+        scored_docs = []
+        for doc in raw_docs:
+            source = os.path.basename(doc.metadata.get("source", "")).lower()
+            page = doc.metadata.get("page", 0)
+            score = 0
+            
+            # FILENAME & KEYWORD BOOST
+            if "setup" in q_lower and "set-up" in source: score += 10
+            
+            # LAPTOP TOOLKIT SUPER-BOOST: If query is about laptop, give ALL toolkit pages huge priority
+            if "laptop" in q_lower:
+                if "toolkit" in source or "productivity" in source or "cutover" in source:
+                    score += 100 # This ensures toolkit chunks rank first
+                elif "mobile" in source or "set-up" in source or "job aid" in source:
+                    score -= 50  # Deprioritize mobile if laptop is requested
+            
+            if "mobile" in q_lower or "iphone" in q_lower:
+                if "mobile" in source or "set-up" in source or "job aid" in source:
+                    score += 60
+                elif "toolkit" in source or "laptop" in source:
+                    score -= 50 # Deprioritize laptop if mobile is requested
+
+            if "backup" in q_lower and "backup" in source: score += 20
+            if "reset" in q_lower and "reset" in source: score += 20
+            
+            # Sequence Boost: Page 0/1 is the start of the procedure
+            if page <= 1: score += 20
+            elif page <= 3: score += 10
+            
+            scored_docs.append((score, doc))
+        
+        # Sort by boosted score
+        reranked_docs = [d[1] for d in sorted(scored_docs, key=lambda x: x[0], reverse=True)]
+        
+        # OPTIMIZED CONTEXT: 18 snippets to cover 16-page manuals while staying under 6000 tokens
+        final_docs = reranked_docs[:18]
+        
+        # SORT DOCS: Group by source and sort by page number
+        def sort_key(doc):
+            source = doc.metadata.get("source", "")
+            page = doc.metadata.get("page", 0)
+            return (source, page)
+        
+        docs = sorted(final_docs, key=sort_key)
+        
+        print(f"Found {len(docs)} deep-matched snippets from {len(set(doc.metadata.get('source','') for doc in docs))} different files")
         
         # Format context from documents
-        context = "\n\n".join([doc.page_content for doc in docs])
+        context = ""
+        for i, doc in enumerate(docs):
+            source_name = os.path.basename(doc.metadata.get('source', 'Manual'))
+            page_num = doc.metadata.get('page', '?')
+            context += f"--- Source: {source_name} (Page {page_num}) ---\n"
+            context += doc.page_content + "\n\n"
         
         # Get answer from LLM
         answer = self.rag_chain.invoke({
