@@ -17,6 +17,9 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Load .env so LLM_MODEL and other settings are available locally
+load_dotenv()
+
 # Add the project root to sys.path for internal imports
 sys.path.append(os.getcwd())
 
@@ -68,7 +71,10 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "chatbot" not in st.session_state:
     # 1. Get API Key from Secrets (Cloud) or Env (Local)
-    api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+    try:
+        api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
+    except FileNotFoundError:
+        api_key = os.getenv("GROQ_API_KEY")
     
     if not api_key:
         st.info("Please set the GROQ_API_KEY in Streamlit Secrets or .env file.")
@@ -82,7 +88,7 @@ if "chatbot" not in st.session_state:
         
         # Use None for chroma_persist_dir to trigger In-Memory mode in the cloud
         persist_dir = None if is_cloud else "backend/chroma_db"
-        model_name = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+        model_name = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
         
         chatbot = RAGChatbot(
             groq_api_key=api_key,
