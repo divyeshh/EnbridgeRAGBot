@@ -84,7 +84,7 @@ class RAGChatbot:
                 self._setup_rag_chain()
                 print(f"Loaded existing vector store from {self.chroma_persist_dir}")
         except Exception as e:
-            print(f"⚠️  Could not load existing vector store: {e}")
+            print(f"[WARN] Could not load existing vector store: {e}")
     
     def load_documents(self, file_path: str) -> List[Document]:
         """Load documents from PDF or DOCX file"""
@@ -120,10 +120,10 @@ class RAGChatbot:
                     print(f"Found document: {full_path}")
         
         if not file_paths:
-            print(f"⚠️  No documents found in {folder_path}")
+            print(f"[WARN] No documents found in {folder_path}")
             return 0
         
-        print(f"📊 Total documents found for indexing: {len(file_paths)}")
+        print(f"[INFO] Total documents found for indexing: {len(file_paths)}")
         
         # Clear existing vector store for a fresh sync to avoid duplicates
         self.clear_vectorstore()
@@ -141,7 +141,7 @@ class RAGChatbot:
                 print(f"Loading: {os.path.basename(file_path)}")
                 docs = self.load_documents(file_path)
                 if not docs:
-                    print(f"⚠️  File {os.path.basename(file_path)} returned no content.")
+                    print(f"[WARN] File {os.path.basename(file_path)} returned no content.")
                     continue
                 
                 # Split this file's documents
@@ -157,10 +157,10 @@ class RAGChatbot:
                 total_chunks += len(file_splits)
                 
             except Exception as e:
-                print(f"❌ Error processing {os.path.basename(file_path)}: {e}")
+                print(f"[ERROR] Error processing {os.path.basename(file_path)}: {e}")
         
         if not all_splits:
-            print("⚠️  No chunks were created from any documents")
+            print("[WARN] No chunks were created from any documents")
             return 0
         
         # Create or update vector store
@@ -326,8 +326,8 @@ class RAGChatbot:
         if self.chroma_persist_dir and os.path.exists(self.chroma_persist_dir):
             try:
                 shutil.rmtree(self.chroma_persist_dir, ignore_errors=True)
-                print(f"🗑️ Deleted directory: {self.chroma_persist_dir}")
+                print(f"[INFO] Deleted directory: {self.chroma_persist_dir}")
             except Exception as e:
-                print(f"⚠️ Could not delete directory {self.chroma_persist_dir}: {e}")
+                print(f"[WARN] Could not delete directory {self.chroma_persist_dir}: {e}")
         
-        print(f"✅ Vector store cleared (Mode: {'Persistent' if self.chroma_persist_dir else 'In-Memory'})")
+        print(f"[OK] Vector store cleared (Mode: {'Persistent' if self.chroma_persist_dir else 'In-Memory'})")

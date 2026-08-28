@@ -50,7 +50,7 @@ rag_chatbot = RAGChatbot(
 )
 
 # Initial sync on startup
-print("🚀 Performing initial document sync...")
+print("[INFO] Performing initial document sync...")
 rag_chatbot.sync_folder(str(UPLOAD_DIR))
 
 # Pydantic models
